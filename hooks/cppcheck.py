@@ -25,10 +25,15 @@ class CppcheckCmd(StaticAnalyzerCmd):
         self.add_if_missing(
             ["--suppress=unmatchedSuppression", "--suppress=missingIncludeSystem", "--suppress=unusedFunction"]
         )
+        # simpler output format, does not include code snippets
+        self.add_if_missing(["--template={file}:{line}:{column}: {message}  [{severity}/{id}] [{cwe}]"])
 
     def run(self):
         """Run cppcheck"""
-        self.run_command(self.args + ["--file-list=-"], input_data="\n".join(self.files))
+        self.run_command(
+            self.args + ["--file-list=-"],
+            input_data="\n".join(self.files).encode()
+        )
         self.exit_on_error()
 
 
