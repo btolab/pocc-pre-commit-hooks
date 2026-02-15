@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Wrapper script for cppcheck."""
-import re
 import sys
 from typing import List
 
@@ -26,12 +25,32 @@ class CppcheckCmd(StaticAnalyzerCmd):
         self.add_if_missing(
             ["--suppress=unmatchedSuppression", "--suppress=missingIncludeSystem", "--suppress=unusedFunction"]
         )
-        self.stderr_re = re.compile(rb"^([^:]+):(\d+):(\d+): (.+)$")
 
     def run(self):
         """Run cppcheck"""
-        self.run_command(self.args + ["--file-list=-"], input_data="\n".join(self.files))
+        self.add_if_missing(["--template=[{severity}:{id}] {file}:{line}:{column}: {message}"])
+        self.run_command(
+            self.args + ["--file-list=-"],
+            input_data="\n".join(self.files).encode()
+        )
+        self.post_process_output()
         self.exit_on_error()
+
+    def post_process_output(self):
+        """
+        Filters self.output for duplicates.
+        """
+        seen: Set[str] = set()
+
+        def _filter_gen():
+            for stream, data in self.output:
+                normalized = data.decode().strip()
+                if normalized in seen:
+                    continue
+                seen.add(normalized)
+                yield stream, data
+
+        self.output[:] = list(_filter_gen())
 
 
 def main(argv: List[str] = sys.argv):
