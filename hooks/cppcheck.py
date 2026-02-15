@@ -34,7 +34,24 @@ class CppcheckCmd(StaticAnalyzerCmd):
             self.args + ["--file-list=-"],
             input_data="\n".join(self.files).encode()
         )
+        self.post_process_output()
         self.exit_on_error()
+
+    def post_process_output(self):
+        """
+        Filters self.output for duplicates.
+        """
+        seen: Set[str] = set()
+
+        def _filter_gen():
+            for stream, data in self.output:
+                normalized = data.decode().strip()
+                if normalized in seen:
+                    continue
+                seen.add(normalized)
+                yield stream, data
+
+        self.output[:] = list(_filter_gen())
 
 
 def main(argv: List[str] = sys.argv):
