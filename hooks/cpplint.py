@@ -20,7 +20,7 @@ class CpplintCmd(StaticAnalyzerCmd):
     def run(self):
         """Run cpplint"""
         self.run_command(self.args + self.files)  # cpplint is unique in requiring args before filename
-        self.exit_on_error()
+        self.exit_on_error(stream_redirect=[(sys.stdout, None)]) # cpplint writes relevant output to stderr, so ignore stdout
 
 
 def main(argv: List[str] = sys.argv):

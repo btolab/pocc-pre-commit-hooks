@@ -7,11 +7,13 @@ import selectors
 import shutil
 import subprocess as sp
 import sys
+from typing import IO
 from typing import List
 from typing import Optional
 from typing import Pattern
 from typing import Set
 from typing import Tuple
+from typing import Union
 
 
 class Command:
@@ -201,11 +203,13 @@ class StaticAnalyzerCmd(Command):
         sp_child.wait()
         self.returncode = sp_child.returncode
 
-    def exit_on_error(self):
-        # if there is an error, print all to stderr, otherwise print to stdout
-        # to support pre-commit verbose mode
-        stream = sys.stderr if self.returncode != 0 else sys.stdout
-        for _, data in self.output:
+    def exit_on_error(self, stream_redirect: List[Tuple[IO, Union[IO, None]]] = []):
+        for stream_name, data in self.output:
+            stream = getattr(sys, stream_name)
+            if stream_redirect:
+                stream = next((stream_to for stream_from, stream_to in stream_redirect if stream_from == stream), stream)
+                if stream is None:
+                    continue
             stream.buffer.write(data)
             stream.flush()
         if self.returncode != 0:
